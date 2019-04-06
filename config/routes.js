@@ -47,8 +47,17 @@ async function register(req, res) {
     try {
       const hash = await theHash(password, 10);
       creds.password = hash;
-      const newUser = await db.add_user(creds);
-      res.status(201).json(newUser);
+      const userCheck = await db.single_user(username);
+      if (userCheck) {
+        res
+          .status(400)
+          .json({
+            Error: "The username is alread taken. Please select another"
+          });
+      } else {
+        const newUser = await db.add_user(creds);
+        res.status(201).json(newUser);
+      }
     } catch (err) {
       res.status(err);
     }
