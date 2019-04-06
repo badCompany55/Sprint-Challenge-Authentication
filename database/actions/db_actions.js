@@ -17,5 +17,5 @@ function single_user(name) {
 }
 
 function add_user(user) {
-  db("users").insert(user);
+  return db("users").insert(user);
 }
