@@ -1,7 +1,7 @@
 const axios = require("axios");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const jwtSecret = require("../auth/authenticate.js").jwtKey;
+const jwtSecret = process.env.JWT_SECRET;
 const db = require("../database/actions/db_actions.js");
 
 const { authenticate } = require("../auth/authenticate");
@@ -21,6 +21,20 @@ async function theHash(pass, salt) {
       });
     });
     return newHash;
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function loginHashCheck(pass, userPass) {
+  try {
+    const loginCheck = await new Promise((res, rej) => {
+      bcrypt.compare(pass, userPass, function(err, pass) {
+        if (err) rej(err);
+        res(pass);
+      });
+    });
+    return loginCheck;
   } catch (err) {
     console.log(err);
   }
@@ -50,7 +64,7 @@ async function login(req, res) {
     try {
       const user = await db.single_user(username);
       if (user) {
-        const loginCheck = bcrypt.compare(password, user.password);
+        const loginCheck = await loginHashCheck(password, user.password);
         if (loginCheck === true) {
           const payload = {
             subject: user.id,
@@ -59,7 +73,7 @@ async function login(req, res) {
           const options = {
             expiresIn: "1d"
           };
-          const token = jwt.sign(payload, jwtSecret, options);
+          const token = await jwt.sign(payload, jwtSecret, options);
           res.status(200).json(token);
         } else {
           res.status(401).json({ Error: "Invalid Credentials" });
